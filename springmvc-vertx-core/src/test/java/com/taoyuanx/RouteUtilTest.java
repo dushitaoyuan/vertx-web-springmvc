@@ -1,15 +1,9 @@
 package com.taoyuanx;
 
-import com.taoyuanx.springmvc.vertx.core.anno.ExceptionHandler;
-import com.taoyuanx.springmvc.vertx.core.util.ReflectionUtil;
 import com.taoyuanx.springmvc.vertx.core.util.RouteUtil;
-import com.taoyuanx.web.RouteAdviceDemo;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import org.junit.Test;
-
-import java.lang.reflect.Method;
-import java.util.*;
 
 /**
  * @author dushitaoyuan
@@ -36,12 +30,7 @@ public class RouteUtilTest {
         };
     }
 
-    @Test
-    public void routerAdvideTest() throws Throwable {
-        Set<Method> methodWithAnnotation = ReflectionUtil.getMethodWithAnnotation(RouteAdviceDemo.class, ExceptionHandler.class);
-        System.out.println(methodWithAnnotation);
 
-    }
 
 
 }

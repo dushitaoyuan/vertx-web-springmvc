@@ -1,10 +1,11 @@
-package com.taoyuanx.web;
+package com.taoyuanx.vertxdemo.withspring.web;
 
 import com.taoyuanx.springmvc.vertx.core.anno.RouteHandler;
 import com.taoyuanx.springmvc.vertx.core.anno.RouteMapping;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
@@ -13,6 +14,8 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/4/21
  */
 @RouteHandler(value = "api")
+
+@Component
 public class RouteHandlerDemo {
     @RouteMapping(value = "demo", method = HttpMethod.GET)
     public Handler<RoutingContext> handle() {

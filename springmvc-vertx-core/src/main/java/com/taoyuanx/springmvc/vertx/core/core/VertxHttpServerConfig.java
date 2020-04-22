@@ -21,4 +21,6 @@ public class VertxHttpServerConfig {
      * , split
      */
     private String basePackages;
+
+    private BeanFactory beanFactory;
 }

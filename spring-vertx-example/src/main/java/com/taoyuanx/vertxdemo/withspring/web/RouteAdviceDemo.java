@@ -1,4 +1,4 @@
-package com.taoyuanx.web;
+package com.taoyuanx.vertxdemo.withspring.web;
 
 import com.taoyuanx.springmvc.vertx.core.anno.ExceptionHandler;
 import com.taoyuanx.springmvc.vertx.core.anno.RouterAdvice;
@@ -6,6 +6,7 @@ import com.taoyuanx.springmvc.vertx.core.util.ResponseUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
+import org.springframework.stereotype.Component;
 
 /**
  * @author dushitaoyuan
@@ -13,6 +14,7 @@ import io.vertx.ext.web.RoutingContext;
  * 异常处理
  */
 @RouterAdvice
+@Component
 public class RouteAdviceDemo {
     @ExceptionHandler(value = MyException.class)
     public Handler<RoutingContext> handle() {

@@ -39,25 +39,19 @@ public class SpringMvcRouterHandler {
 
     private BeanFactory beanFactory;
     private String serverPrefix;
-    private  VertxHttpServerConfig httpServerConfig;
+    private VertxHttpServerConfig httpServerConfig;
 
-    public SpringMvcRouterHandler(String basePackages, BeanFactory beanFactory, VertxHttpServerConfig httpServerConfig) {
-        this(basePackages, REQUEST_PREFIX, beanFactory, httpServerConfig);
+    public SpringMvcRouterHandler(String basePackages, VertxHttpServerConfig httpServerConfig) {
+        this(basePackages, REQUEST_PREFIX, httpServerConfig);
     }
 
-    public SpringMvcRouterHandler(String basePackages,  VertxHttpServerConfig httpServerConfig) {
-        this(basePackages, REQUEST_PREFIX, new BeanFactory.DefaultBeanFactoryImpl(), httpServerConfig);
-    }
-
-    public SpringMvcRouterHandler(String basePackages, String serverPrefix, BeanFactory beanFactory, VertxHttpServerConfig httpServerConfig) {
+    public SpringMvcRouterHandler(String basePackages, String serverPrefix, VertxHttpServerConfig httpServerConfig) {
         Objects.requireNonNull(basePackages, "The basePackages scan is empty.");
-        Objects.requireNonNull(basePackages, "The beanFactory  can't empty.");
         reflections = ReflectionUtil.getReflections(basePackages);
         this.serverPrefix = serverPrefix;
-        this.beanFactory = beanFactory;
+        this.beanFactory = httpServerConfig.getBeanFactory();
         this.httpServerConfig = httpServerConfig;
     }
-
 
 
     public Router routerHandle() {
