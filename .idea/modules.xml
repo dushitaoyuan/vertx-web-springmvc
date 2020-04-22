@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/springmvc-vertx-core/springmvc-vertx-core.iml" filepath="$PROJECT_DIR$/springmvc-vertx-core/springmvc-vertx-core.iml" />
-      <module fileurl="file://$PROJECT_DIR$/vertx-web-springmvc.iml" filepath="$PROJECT_DIR$/vertx-web-springmvc.iml" />
-    </modules>
-  </component>
-</project>
