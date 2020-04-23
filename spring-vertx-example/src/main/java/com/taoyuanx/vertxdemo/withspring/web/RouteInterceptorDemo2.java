@@ -1,8 +1,8 @@
 package com.taoyuanx.vertxdemo.withspring.web;
 
-import com.taoyuanx.springmvc.vertx.core.anno.Interceptor;
+import com.taoyuanx.springmvc.vertx.core.core.interceptors.Interceptor;
 import com.taoyuanx.springmvc.vertx.core.core.Order;
-import com.taoyuanx.springmvc.vertx.core.interceptors.IRequestInterceptor;
+import com.taoyuanx.springmvc.vertx.core.core.interceptors.IRequestInterceptor;
 import io.vertx.ext.web.RoutingContext;
 import org.springframework.stereotype.Component;
 

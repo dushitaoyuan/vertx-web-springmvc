@@ -1,7 +1,16 @@
 package com.taoyuanx.springmvc.vertx.core.core;
 
-import com.taoyuanx.springmvc.vertx.core.anno.*;
-import com.taoyuanx.springmvc.vertx.core.interceptors.IRequestInterceptor;
+import com.taoyuanx.springmvc.vertx.core.anno.route.RouteHandler;
+import com.taoyuanx.springmvc.vertx.core.anno.route.RouteMapping;
+import com.taoyuanx.springmvc.vertx.core.core.exception.ExceptionHandler;
+import com.taoyuanx.springmvc.vertx.core.core.exception.RouterAdvice;
+import com.taoyuanx.springmvc.vertx.core.core.interceptors.IRequestInterceptor;
+import com.taoyuanx.springmvc.vertx.core.core.interceptors.Interceptor;
+import com.taoyuanx.springmvc.vertx.core.core.message.MessageConverter;
+import com.taoyuanx.springmvc.vertx.core.core.message.VertxMessageConverter;
+import com.taoyuanx.springmvc.vertx.core.core.route.RouteInfo;
+import com.taoyuanx.springmvc.vertx.core.core.template.AbstractTemplateEngineDelegate;
+import com.taoyuanx.springmvc.vertx.core.core.template.VertxTemplateEngine;
 import com.taoyuanx.springmvc.vertx.core.util.OrderUtil;
 import com.taoyuanx.springmvc.vertx.core.util.ReflectionUtil;
 import com.taoyuanx.springmvc.vertx.core.util.ResponseUtil;
@@ -15,6 +24,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.common.template.TemplateEngine;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import org.reflections.Reflections;
@@ -38,17 +48,15 @@ public class SpringMvcRouterHandler {
     private static String REQUEST_PREFIX = "";
 
     private BeanFactory beanFactory;
-    private String serverPrefix;
     private VertxHttpServerConfig httpServerConfig;
 
-    public SpringMvcRouterHandler(String basePackages, VertxHttpServerConfig httpServerConfig) {
-        this(basePackages, REQUEST_PREFIX, httpServerConfig);
+    public VertxHttpServerConfig getHttpServerConfig() {
+        return httpServerConfig;
     }
 
-    public SpringMvcRouterHandler(String basePackages, String serverPrefix, VertxHttpServerConfig httpServerConfig) {
-        Objects.requireNonNull(basePackages, "The basePackages scan is empty.");
-        reflections = ReflectionUtil.getReflections(basePackages);
-        this.serverPrefix = serverPrefix;
+
+    public SpringMvcRouterHandler(VertxHttpServerConfig httpServerConfig) {
+        reflections = ReflectionUtil.getReflections(httpServerConfig.getBasePackages());
         this.beanFactory = httpServerConfig.getBeanFactory();
         this.httpServerConfig = httpServerConfig;
     }
@@ -70,6 +78,14 @@ public class SpringMvcRouterHandler {
 
         router.route().handler(BodyHandler.create(true));
         initInterceptor(router);
+        /**
+         * 初始化消息转换
+         */
+        initVertxMessageConverter();
+        /**
+         * 初始化模板引擎
+         */
+        initVertxTemplateEngine();
         /**
          * 前置拦截
          */
@@ -226,7 +242,7 @@ public class SpringMvcRouterHandler {
                     Set<Method> exceptionHandlerMethod = ReflectionUtil.getMethodWithAnnotation(routerAdviceHandler, ExceptionHandler.class);
                     exceptionHandlerMethod.stream().forEach(method -> {
                         ExceptionHandler annotation = method.getAnnotation(ExceptionHandler.class);
-                        Handler<RoutingContext> errorHandler = RouteUtil.getRouteMethodHandler(method, instance);
+                        Handler<RoutingContext> errorHandler = RouteUtil.resolveHandler(method, instance);
                         Class<? extends Throwable>[] value = annotation.value();
                         if (Objects.nonNull(value) && value.length > 0) {
                             Arrays.stream(value).forEach(error -> {
@@ -289,7 +305,6 @@ public class SpringMvcRouterHandler {
                     try {
                         List<RouteInfo> routeInfoList = extractRouteInfo(handler);
                         routeInfoList.stream().sorted(Comparator.comparingInt(RouteInfo::getOrder)).forEach(routeInfo -> {
-
                             String routePath = routeInfo.getRoutePath();
                             List<HttpMethod> routeMethod = routeInfo.getRouteMethod();
                             Handler<RoutingContext> methodHandler = routeInfo.getMethodHandler();
@@ -332,19 +347,19 @@ public class SpringMvcRouterHandler {
     }
 
     private List<RouteInfo> extractRouteInfo(Class routeHandlerClass) throws Exception {
-
         RouteHandler routeHandlerAnnotation = RouteUtil.getRouteHandlerAnnotation(routeHandlerClass);
         if (Objects.isNull(routeHandlerAnnotation)) {
             throw new VertxException("@RouteHandler  must need");
         }
+        String serverPrefix = httpServerConfig.getServerBasePath();
+        boolean classBlocked = routeHandlerAnnotation.blocked();
         String routePrefix = routeHandlerAnnotation.value();
         Object instance = this.beanFactory.get(routeHandlerClass);
         List<RouteInfo> routeInfoList = Stream.of(routeHandlerClass.getMethods()).filter(method -> method.isAnnotationPresent(RouteMapping.class)
         ).map(method -> {
             RouteMapping routeMapping = RouteUtil.getRouteMappingAnnotation(method);
             HttpMethod[] routeMethod = routeMapping.method();
-            String routePath = RouteUtil.calcRouteUrl(this.serverPrefix, routePrefix, routeMapping.value());
-            Handler<RoutingContext> methodHandler = RouteUtil.getRouteMethodHandler(method, instance);
+            String routePath = RouteUtil.calcRouteUrl(serverPrefix, routePrefix, routeMapping.value());
             RouteInfo routeInfo = new RouteInfo();
             routeInfo.setRoutePath(routePath);
             routeInfo.setRouteMethod(Arrays.asList(routeMethod));
@@ -352,12 +367,77 @@ public class SpringMvcRouterHandler {
             routeInfo.setConsumes(routeMapping.consumes());
             routeInfo.setProduces(routeMapping.produces());
             routeInfo.setBlocked(routeMapping.blocked());
-            routeInfo.setMethodHandler(methodHandler);
+            RouteUtil.resolveRouteMethodHandler(method, instance, httpServerConfig, routeInfo);
             return routeInfo;
         }).collect(Collectors.toList());
         return routeInfoList;
 
     }
 
+    /**
+     * 初始化模板引擎
+     */
+    private void initVertxTemplateEngine() {
+        httpServerConfig.setTemplateEngineMap(new LinkedHashMap<>());
+        Set<Class<?>> templateEngines = reflections.getTypesAnnotatedWith(VertxTemplateEngine.class);
+        if (Objects.isNull(templateEngines) && templateEngines.size() == 0) {
+            return;
+        }
+        Map<String, AbstractTemplateEngineDelegate> templateEngineDelegateMap = httpServerConfig.getTemplateEngineMap();
+        templateEngines.stream().sorted(Comparator.comparingInt(x -> {
+            return OrderUtil.getOrder(x, 0);
+        })).forEach(templateEngineClass -> {
+            VertxTemplateEngine annotation = templateEngineClass.getAnnotation(VertxTemplateEngine.class);
+            AbstractTemplateEngineDelegate templateEngineDelegate = (AbstractTemplateEngineDelegate) beanFactory.get(templateEngineClass);
+            templateEngineDelegate.setBasePath(annotation.basePath());
+            templateEngineDelegate.setVertx(httpServerConfig.getVertx());
+            templateEngineDelegate.after();
+            templateEngineDelegateMap.put(annotation.name(), templateEngineDelegate);
+        });
+
+    }
+
+    /**
+     * 初始化消息转换
+     */
+    private void initVertxMessageConverter() {
+        httpServerConfig.setMessageConverterList(new ArrayList<>());
+        Set<Class<?>> vertxMessageConverter = reflections.getTypesAnnotatedWith(VertxMessageConverter.class);
+        if (Objects.isNull(vertxMessageConverter) && vertxMessageConverter.size() == 0) {
+            return;
+        }
+        List<MessageConverter> messageConverterList = httpServerConfig.getMessageConverterList();
+        vertxMessageConverter.stream().sorted(Comparator.comparingInt(x -> {
+            return OrderUtil.getOrder(x, 0);
+        })).map(messageConverterClass -> {
+            return (MessageConverter) beanFactory.get(messageConverterClass);
+        }).forEach(messageConverterList::add);
+
+    }
+
+    public void registVertxTemplateEngine(String engineName, String suffix, TemplateEngine templateEngine) {
+        String vertxSuffix = suffix;
+        AbstractTemplateEngineDelegate templateEngineDelegate = new AbstractTemplateEngineDelegate() {
+            @Override
+            public boolean support(String suffix) {
+                return vertxSuffix.equals(suffix);
+            }
+
+            @Override
+            public void after() {
+
+            }
+        };
+        templateEngineDelegate.setDelegate(templateEngine);
+        httpServerConfig.getTemplateEngineMap().put(engineName, templateEngineDelegate);
+    }
+
+    public void registVertxMessageConverter(int order, MessageConverter messageConverter) {
+        httpServerConfig.getMessageConverterList().add(order, messageConverter);
+    }
+
+    public void registVertxMessageConverter(MessageConverter messageConverter) {
+        httpServerConfig.getMessageConverterList().add(messageConverter);
+    }
 
 }

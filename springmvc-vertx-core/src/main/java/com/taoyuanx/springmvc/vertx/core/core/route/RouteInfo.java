@@ -1,4 +1,4 @@
-package com.taoyuanx.springmvc.vertx.core.core;
+package com.taoyuanx.springmvc.vertx.core.core.route;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
@@ -17,6 +17,9 @@ public class RouteInfo {
     private Integer order;
 
     private boolean blocked;
+
+
+
 
     private Handler<RoutingContext> methodHandler;
 

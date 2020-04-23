@@ -1,4 +1,4 @@
-package com.taoyuanx.springmvc.vertx.core.anno;
+package com.taoyuanx.springmvc.vertx.core.anno.route;
 
 import com.taoyuanx.springmvc.vertx.core.core.VertxConstant;
 import io.vertx.core.http.HttpMethod;
@@ -25,6 +25,4 @@ public @interface RouteMapping {
     String[] produces() default {};
 
     String desc() default "";
-
-
 }

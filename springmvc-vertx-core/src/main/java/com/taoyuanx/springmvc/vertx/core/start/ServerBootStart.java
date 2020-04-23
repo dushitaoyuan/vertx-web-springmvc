@@ -1,10 +1,10 @@
 package com.taoyuanx.springmvc.vertx.core.start;
 
 import com.taoyuanx.springmvc.vertx.core.core.BeanFactory;
+import com.taoyuanx.springmvc.vertx.core.core.SpringMvcRouterHandler;
 import com.taoyuanx.springmvc.vertx.core.core.VertxConstant;
 import com.taoyuanx.springmvc.vertx.core.core.VertxHttpServerConfig;
 import com.taoyuanx.springmvc.vertx.core.util.StringUtil;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxException;
 import io.vertx.core.VertxOptions;
@@ -13,7 +13,6 @@ import io.vertx.ext.web.Router;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @author dushitaoyuan
@@ -23,17 +22,18 @@ import java.util.function.Function;
 public class ServerBootStart {
 
 
-    public static void start(String basepackages, Consumer<VertxHttpServerVerticle> consumer) {
+    public static void start(String basepackages, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
         VertxHttpServerConfig serverConfig = new VertxHttpServerConfig();
         serverConfig.setBasePackages(basepackages);
-        start(serverConfig, consumer);
+        start(serverConfig, before, after);
     }
 
-    public static void start(VertxHttpServerConfig serverConfig, Consumer<VertxHttpServerVerticle> consumer) {
+    public static void start(VertxHttpServerConfig serverConfig,  Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
         resolveDefaultServerConfig(serverConfig);
-        VertxHttpServerVerticle vertxHttpServerVerticle = new VertxHttpServerVerticle(serverConfig);
-        consumer.accept(vertxHttpServerVerticle);
-        Vertx.vertx().deployVerticle(vertxHttpServerVerticle);
+        SpringMvcRouterHandler springMvcRouterHandler = new SpringMvcRouterHandler(serverConfig);
+        VertxHttpServerVerticle vertxHttpServerVerticle = new VertxHttpServerVerticle(springMvcRouterHandler,after);
+        before.accept(springMvcRouterHandler);
+        serverConfig.getVertx().deployVerticle(vertxHttpServerVerticle);
     }
 
     private static void resolveDefaultServerConfig(VertxHttpServerConfig serverConfig) {
@@ -43,7 +43,7 @@ public class ServerBootStart {
         if (Objects.isNull(serverConfig.getBeanFactory())) {
             serverConfig.setBeanFactory(new BeanFactory.DefaultBeanFactoryImpl());
         }
-        if (Objects.isNull(serverConfig.getBeanFactory())) {
+        if (Objects.isNull(serverConfig.getHttpPort())) {
             serverConfig.setHttpPort(VertxConstant.DEFAULT_SERVER_PORT);
         }
         if (Objects.isNull(serverConfig.getEventBusconnectTimeout())) {
@@ -64,6 +64,10 @@ public class ServerBootStart {
         }
         if (Objects.isNull(serverConfig.getRouter())) {
             serverConfig.setRouter(Router.router(serverConfig.getVertx()));
+        }
+
+        if(StringUtil.isEmpty(serverConfig.getStaticDir())){
+            serverConfig.setStaticDir(VertxConstant.DEALUT_STATIC_DIR);
         }
 
     }

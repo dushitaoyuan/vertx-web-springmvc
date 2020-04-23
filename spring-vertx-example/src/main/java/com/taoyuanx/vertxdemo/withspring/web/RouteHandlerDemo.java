@@ -1,9 +1,12 @@
 package com.taoyuanx.vertxdemo.withspring.web;
 
-import com.taoyuanx.springmvc.vertx.core.anno.RouteHandler;
-import com.taoyuanx.springmvc.vertx.core.anno.RouteMapping;
+import com.taoyuanx.springmvc.vertx.core.anno.route.ResponseBody;
+import com.taoyuanx.springmvc.vertx.core.anno.route.RouteHandler;
+import com.taoyuanx.springmvc.vertx.core.anno.route.RouteMapping;
+import com.taoyuanx.springmvc.vertx.core.core.template.TemplateBody;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import org.springframework.stereotype.Component;
 
@@ -54,5 +57,34 @@ public class RouteHandlerDemo {
             System.out.println("error");
             throw new MyException(" error MyException");
         };
+    }
+    @RouteMapping(value = "message", method = HttpMethod.GET)
+    @ResponseBody
+    public String message(RoutingContext ctx) {
+        return "json";
+    }
+
+    @RouteMapping(value = "jsonMessage", method = HttpMethod.GET)
+    @ResponseBody
+    public JsonObject jsonMessage(RoutingContext ctx) {
+        JsonObject jsonObject=new JsonObject();
+        jsonObject.put("spring json","json");
+        return jsonObject;
+    }
+
+    @RouteMapping(value = "template", method = HttpMethod.GET)
+    @TemplateBody
+    public String template(RoutingContext ctx,JsonObject dataModel)
+    {
+        dataModel.put("hello","dushitaoyuan say hi to you! thymeleaf");
+        return "index.html";
+    }
+
+    @RouteMapping(value = "template2", method = HttpMethod.GET)
+    @TemplateBody
+    public String template2(RoutingContext ctx,JsonObject dataModel)
+    {
+        dataModel.put("hello","dushitaoyuan say hi to you! freemarker");
+        return "index.ftl";
     }
 }

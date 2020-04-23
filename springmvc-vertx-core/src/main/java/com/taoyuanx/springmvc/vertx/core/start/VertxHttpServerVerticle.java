@@ -10,6 +10,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 /**
  * @author dushitaoyuan
@@ -17,35 +18,33 @@ import java.util.Arrays;
  */
 public class VertxHttpServerVerticle extends AbstractVerticle {
 
-    private VertxHttpServerConfig serverConfig;
     private HttpServer server;
 
     public HttpServer getServer() {
         return server;
     }
 
-    public VertxHttpServerConfig getServerConfig() {
-        return serverConfig;
-    }
 
-    public VertxHttpServerVerticle(VertxHttpServerConfig serverConfig) {
-        this.serverConfig = serverConfig;
+    private Consumer<SpringMvcRouterHandler> after;
+    private SpringMvcRouterHandler routerHandlerRegister;
+
+    public VertxHttpServerVerticle(SpringMvcRouterHandler routerHandlerRegister, Consumer<SpringMvcRouterHandler> after) {
+        this.after = after;
+        this.routerHandlerRegister = routerHandlerRegister;
     }
 
     @Override
     public void start() throws Exception {
         HttpServer server = vertx.createHttpServer();
         this.server = server;
-        SpringMvcRouterHandler routerHandlerRegister = new SpringMvcRouterHandler(serverConfig.getBasePackages(), serverConfig);
+        VertxHttpServerConfig serverConfig = routerHandlerRegister.getHttpServerConfig();
         routerHandlerRegister.routerHandle();
+        after.accept(routerHandlerRegister);
         Router router = serverConfig.getRouter();
-        if(StringUtil.isEmpty(serverConfig.getStaticDir())){
-            serverConfig.setStaticDir(VertxConstant.DEALUT_STATIC_DIR);
-        }
-        Arrays.stream(serverConfig.getStaticDir().split(",")).forEach(staticDir->{
+        Arrays.stream(serverConfig.getStaticDir().split(",")).forEach(staticDir -> {
             router.route().handler(StaticHandler.create(staticDir));
         });
-        server.requestHandler(router::handle);
-        server.listen(serverConfig.getHttpPort());
+        this.server.requestHandler(router::handle);
+        this.server.listen(serverConfig.getHttpPort());
     }
 }

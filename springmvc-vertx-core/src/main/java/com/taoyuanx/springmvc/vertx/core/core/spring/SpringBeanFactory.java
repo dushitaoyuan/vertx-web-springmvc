@@ -1,4 +1,4 @@
-package com.taoyuanx.springmvc.vertx.core.spring;
+package com.taoyuanx.springmvc.vertx.core.core.spring;
 
 import com.taoyuanx.springmvc.vertx.core.core.BeanFactory;
 import org.springframework.beans.BeansException;
