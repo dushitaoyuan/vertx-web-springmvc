@@ -12,6 +12,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.ext.web.RoutingContext;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -62,21 +63,17 @@ public class RouteUtil {
                                                  VertxHttpServerConfig serverConfig,
                                                  RouteInfo routeInfo) {
         try {
-
-            if (method.isAnnotationPresent(ResponseBody.class)) {
-                /**
-                 * 注解 blocked 失效 强制阻塞执行
-                 */
-                routeInfo.setBlocked(true);
+            /**
+             * 判断方法是否阻塞执行
+             */
+            routeInfo.setBlocked(calcMethodHandlerBlocked(method));
+            if (methodHandlerHasAnnotion(method, ResponseBody.class)) {
                 routeInfo.setMethodHandler(HandlerWrapper.jsonWrapper(serverConfig, method, instance));
                 return;
             }
-            if (method.isAnnotationPresent(TemplateBody.class)) {
-                /**
-                 * 注解 blocked 失效 强制阻塞执行
-                 */
-                routeInfo.setBlocked(true);
-                routeInfo.setMethodHandler(HandlerWrapper.templateWrapper(serverConfig, method, instance));
+            Annotation templateBodyAnno = RouteUtil.getMethodHandlerHasAnnotion(method, TemplateBody.class);
+            if (Objects.nonNull(templateBodyAnno)) {
+                routeInfo.setMethodHandler(HandlerWrapper.templateWrapper(serverConfig, method, instance, (TemplateBody) templateBodyAnno));
                 return;
             }
             Object result = method.invoke(instance);
@@ -84,11 +81,48 @@ public class RouteUtil {
                 routeInfo.setMethodHandler((Handler<RoutingContext>) result);
                 return;
             }
-
         } catch (Exception e) {
             throw new VertxException("route hander error", e);
         }
         throw new VertxException("route hander not support");
+    }
+
+    private static boolean calcMethodHandlerBlocked(Method method) {
+        /**
+         * 判断逻辑
+         * 1.handler class 有注解 ResponseBody|TemplateBody 必须阻塞
+         * 2. 否则 根据 handler method计算
+         * 3. 计算逻辑:handler method 是否有注解 ResponseBody|TemplateBody,且 RouteMapping blocked 值为true
+         */
+        boolean classBlocked = calcClassBlocked(method.getDeclaringClass());
+        if (classBlocked) {
+            return true;
+        } else {
+            return calcMethodBlocked(method);
+        }
+    }
+
+    private static boolean calcMethodBlocked(Method method) {
+        return method.isAnnotationPresent(ResponseBody.class) ||
+                method.isAnnotationPresent(TemplateBody.class) ||
+                method.getAnnotation(RouteMapping.class).blocked();
+    }
+
+    private static boolean calcClassBlocked(Class clazz) {
+        return clazz.isAnnotationPresent(ResponseBody.class) ||
+                clazz.isAnnotationPresent(TemplateBody.class);
+    }
+
+    private static boolean methodHandlerHasAnnotion(Method method, Class annotationClass) {
+        return method.isAnnotationPresent(annotationClass) || method.getDeclaringClass().isAnnotationPresent(annotationClass);
+    }
+
+    public static Annotation getMethodHandlerHasAnnotion(Method method, Class annotationClass) {
+        Annotation annotation = method.getAnnotation(annotationClass);
+        if (annotation == null) {
+            return method.getDeclaringClass().getAnnotation(annotationClass);
+        }
+        return annotation;
     }
 
     public static Handler<RoutingContext> resolveHandler(Method method, Object instance) {

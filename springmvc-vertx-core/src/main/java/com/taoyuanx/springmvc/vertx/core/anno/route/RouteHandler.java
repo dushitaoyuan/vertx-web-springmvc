@@ -16,8 +16,5 @@ public @interface RouteHandler {
      */
     String value() default "";
 
-    /**
-     * 是否阻塞
-     */
-    boolean blocked() default false;
+
 }

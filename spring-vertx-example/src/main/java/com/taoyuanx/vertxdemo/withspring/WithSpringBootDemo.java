@@ -27,8 +27,8 @@ public class WithSpringBootDemo {
             VertxHttpServerConfig serverConfig = springMvcRouterHandler.getHttpServerConfig();
             ThymeleafTemplateEngine thymeleafTemplateEngine = ThymeleafTemplateEngine.create(serverConfig.getVertx());
             FreeMarkerTemplateEngine freeMarkerTemplateEngine = FreeMarkerTemplateEngine.create(serverConfig.getVertx());
-            springMvcRouterHandler.registVertxTemplateEngine("myTemplate", "html", thymeleafTemplateEngine);
-            springMvcRouterHandler.registVertxTemplateEngine("myTemplate2", "ftl", freeMarkerTemplateEngine);
+            springMvcRouterHandler.registVertxTemplateEngine("myTemplate", "templates/", "html", thymeleafTemplateEngine);
+            springMvcRouterHandler.registVertxTemplateEngine("myTemplate2", "templates/", "ftl", freeMarkerTemplateEngine);
             springMvcRouterHandler.registVertxMessageConverter(new MyJsonMessageConverter());
             System.out.println("启动后");
         });

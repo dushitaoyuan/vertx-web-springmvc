@@ -1,10 +1,12 @@
 package com.taoyuanx.springmvc.vertx.core.core.route;
 
+import com.taoyuanx.springmvc.vertx.core.anno.route.ResponseBody;
 import com.taoyuanx.springmvc.vertx.core.core.VertxHttpServerConfig;
 import com.taoyuanx.springmvc.vertx.core.core.template.TemplateBody;
 import com.taoyuanx.springmvc.vertx.core.core.message.MessageConverter;
 import com.taoyuanx.springmvc.vertx.core.core.template.AbstractTemplateEngineDelegate;
 import com.taoyuanx.springmvc.vertx.core.util.ResponseUtil;
+import com.taoyuanx.springmvc.vertx.core.util.RouteUtil;
 import com.taoyuanx.springmvc.vertx.core.util.StringUtil;
 import com.taoyuanx.springmvc.vertx.core.util.TemplateUtil;
 import io.vertx.core.Handler;
@@ -27,13 +29,12 @@ public class HandlerWrapper {
     /**
      * 模板渲染
      */
-    public static Handler<RoutingContext> templateWrapper(VertxHttpServerConfig serverConfig, Method method, Object instance) {
+    public static Handler<RoutingContext> templateWrapper(VertxHttpServerConfig serverConfig, Method method, Object instance,TemplateBody templateBody) {
         return ctx -> {
             Map<String, AbstractTemplateEngineDelegate> templateEngineMap = serverConfig.getTemplateEngineMap();
             if (Objects.isNull(templateEngineMap) || templateEngineMap.isEmpty()) {
                 throw new VertxException("templateEngine not find");
             }
-            TemplateBody templateBody = method.getAnnotation(TemplateBody.class);
             String templateEngineName = templateBody.engineName();
             AbstractTemplateEngineDelegate choseEngine = null;
             if (StringUtil.isNotEmpty(templateEngineName) && templateEngineMap.containsKey(templateEngineName)) {

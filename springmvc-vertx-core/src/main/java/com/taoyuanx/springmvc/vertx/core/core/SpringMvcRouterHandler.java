@@ -352,7 +352,6 @@ public class SpringMvcRouterHandler {
             throw new VertxException("@RouteHandler  must need");
         }
         String serverPrefix = httpServerConfig.getServerBasePath();
-        boolean classBlocked = routeHandlerAnnotation.blocked();
         String routePrefix = routeHandlerAnnotation.value();
         Object instance = this.beanFactory.get(routeHandlerClass);
         List<RouteInfo> routeInfoList = Stream.of(routeHandlerClass.getMethods()).filter(method -> method.isAnnotationPresent(RouteMapping.class)
@@ -366,7 +365,6 @@ public class SpringMvcRouterHandler {
             routeInfo.setOrder(routeMapping.order());
             routeInfo.setConsumes(routeMapping.consumes());
             routeInfo.setProduces(routeMapping.produces());
-            routeInfo.setBlocked(routeMapping.blocked());
             RouteUtil.resolveRouteMethodHandler(method, instance, httpServerConfig, routeInfo);
             return routeInfo;
         }).collect(Collectors.toList());
@@ -415,7 +413,7 @@ public class SpringMvcRouterHandler {
 
     }
 
-    public void registVertxTemplateEngine(String engineName, String suffix, TemplateEngine templateEngine) {
+    public void registVertxTemplateEngine(String engineName, String basePath, String suffix, TemplateEngine templateEngine) {
         String vertxSuffix = suffix;
         AbstractTemplateEngineDelegate templateEngineDelegate = new AbstractTemplateEngineDelegate() {
             @Override
@@ -428,8 +426,14 @@ public class SpringMvcRouterHandler {
 
             }
         };
+        templateEngineDelegate.setBasePath(basePath);
         templateEngineDelegate.setDelegate(templateEngine);
         httpServerConfig.getTemplateEngineMap().put(engineName, templateEngineDelegate);
+    }
+
+    public void registVertxTemplateEngine(String engineName, AbstractTemplateEngineDelegate templateEngine) {
+        templateEngine.after();
+        httpServerConfig.getTemplateEngineMap().put(engineName, templateEngine);
     }
 
     public void registVertxMessageConverter(int order, MessageConverter messageConverter) {
