@@ -42,10 +42,6 @@ import java.util.stream.Stream;
 public class SpringMvcRouterHandler {
     private static final Logger LOG = LoggerFactory.getLogger(SpringMvcRouterHandler.class);
 
-    // 需要扫描注册的Router路径
-    private static volatile Reflections reflections;
-
-    private static String REQUEST_PREFIX = "";
 
     private BeanFactory beanFactory;
     private VertxHttpServerConfig httpServerConfig;
@@ -56,7 +52,6 @@ public class SpringMvcRouterHandler {
 
 
     public SpringMvcRouterHandler(VertxHttpServerConfig httpServerConfig) {
-        reflections = ReflectionUtil.getReflections(httpServerConfig.getBasePackages());
         this.beanFactory = httpServerConfig.getBeanFactory();
         this.httpServerConfig = httpServerConfig;
     }
@@ -116,16 +111,17 @@ public class SpringMvcRouterHandler {
     private List<IRequestInterceptor> interceptorList = new ArrayList<>();
 
     private void initInterceptor(Router router) {
-        Set<Class<? extends IRequestInterceptor>> interceptorHandlers = reflections.getSubTypesOf(IRequestInterceptor.class);
+        Set<Object> interceptorHandlers = beanFactory.getTypesAnnotatedWith(Interceptor.class);
         if (Objects.isNull(interceptorHandlers) && interceptorHandlers.size() == 0) {
             return;
         }
-        interceptorHandlers.stream().filter(clazz -> {
+        interceptorHandlers.stream().filter(object -> {
+            Class clazz = object.getClass();
             return clazz.getAnnotation(Interceptor.class) != null && ReflectionUtil.isClassImplements(clazz, IRequestInterceptor.class);
         }).sorted(Comparator.comparingInt(x -> {
             return OrderUtil.getOrder(x, VertxConstant.INTERCEPTOR_PRE_DEFAULT_ORDER);
         })).forEach(interceptorHandler -> {
-                    IRequestInterceptor requestInterceptor = (IRequestInterceptor) beanFactory.get(interceptorHandler);
+                    IRequestInterceptor requestInterceptor = (IRequestInterceptor) interceptorHandler;
                     LOG.debug("regist {}  interceptor", requestInterceptor);
                     interceptorList.add(requestInterceptor);
                 }
@@ -232,17 +228,16 @@ public class SpringMvcRouterHandler {
      * @param router
      */
     private void registRouterExceptionHandler(Router router) {
-        Set<Class<?>> exceptionHandlers = reflections.getTypesAnnotatedWith(RouterAdvice.class);
+        Set<Object> exceptionHandlers = beanFactory.getTypesAnnotatedWith(RouterAdvice.class);
         if (Objects.isNull(exceptionHandlers) && exceptionHandlers.size() == 0) {
             return;
         }
         Map<Class<? extends Throwable>, Handler<RoutingContext>> errorHandlerMaping = new HashMap<>();
         exceptionHandlers.stream().forEach(routerAdviceHandler -> {
-                    Object instance = beanFactory.get(routerAdviceHandler);
-                    Set<Method> exceptionHandlerMethod = ReflectionUtil.getMethodWithAnnotation(routerAdviceHandler, ExceptionHandler.class);
+                    Set<Method> exceptionHandlerMethod = ReflectionUtil.getMethodWithAnnotation(routerAdviceHandler.getClass(), ExceptionHandler.class);
                     exceptionHandlerMethod.stream().forEach(method -> {
                         ExceptionHandler annotation = method.getAnnotation(ExceptionHandler.class);
-                        Handler<RoutingContext> errorHandler = RouteUtil.resolveHandler(method, instance);
+                        Handler<RoutingContext> errorHandler = RouteUtil.resolveHandler(method, routerAdviceHandler);
                         Class<? extends Throwable>[] value = annotation.value();
                         if (Objects.nonNull(value) && value.length > 0) {
                             Arrays.stream(value).forEach(error -> {
@@ -297,13 +292,13 @@ public class SpringMvcRouterHandler {
      * @throws Exception
      */
     private void registRouterHandler(Router router) {
-        Set<Class<?>> routerHandlers = reflections.getTypesAnnotatedWith(RouteHandler.class);
+        Set<Object> routerHandlers = beanFactory.getTypesAnnotatedWith(RouteHandler.class);
         if (Objects.isNull(routerHandlers) && routerHandlers.size() == 0) {
             return;
         }
         routerHandlers.stream().forEach(handler -> {
                     try {
-                        List<RouteInfo> routeInfoList = extractRouteInfo(handler);
+                        List<RouteInfo> routeInfoList = extractRouteInfo(handler.getClass());
                         routeInfoList.stream().sorted(Comparator.comparingInt(RouteInfo::getOrder)).forEach(routeInfo -> {
                             String routePath = routeInfo.getRoutePath();
                             List<HttpMethod> routeMethod = routeInfo.getRouteMethod();
@@ -377,16 +372,17 @@ public class SpringMvcRouterHandler {
      */
     private void initVertxTemplateEngine() {
         httpServerConfig.setTemplateEngineMap(new LinkedHashMap<>());
-        Set<Class<?>> templateEngines = reflections.getTypesAnnotatedWith(VertxTemplateEngine.class);
+        Set<Object> templateEngines = beanFactory.getTypesAnnotatedWith(VertxTemplateEngine.class);
         if (Objects.isNull(templateEngines) && templateEngines.size() == 0) {
             return;
         }
         Map<String, AbstractTemplateEngineDelegate> templateEngineDelegateMap = httpServerConfig.getTemplateEngineMap();
         templateEngines.stream().sorted(Comparator.comparingInt(x -> {
             return OrderUtil.getOrder(x, 0);
-        })).forEach(templateEngineClass -> {
-            VertxTemplateEngine annotation = templateEngineClass.getAnnotation(VertxTemplateEngine.class);
-            AbstractTemplateEngineDelegate templateEngineDelegate = (AbstractTemplateEngineDelegate) beanFactory.get(templateEngineClass);
+        })).forEach(templateEngine -> {
+            Class templateEngineClass = templateEngine.getClass();
+            VertxTemplateEngine annotation = (VertxTemplateEngine) templateEngineClass.getAnnotation(VertxTemplateEngine.class);
+            AbstractTemplateEngineDelegate templateEngineDelegate = (AbstractTemplateEngineDelegate) templateEngine;
             templateEngineDelegate.setBasePath(annotation.basePath());
             templateEngineDelegate.setVertx(httpServerConfig.getVertx());
             templateEngineDelegate.after();
@@ -400,15 +396,15 @@ public class SpringMvcRouterHandler {
      */
     private void initVertxMessageConverter() {
         httpServerConfig.setMessageConverterList(new ArrayList<>());
-        Set<Class<?>> vertxMessageConverter = reflections.getTypesAnnotatedWith(VertxMessageConverter.class);
+        Set<Object> vertxMessageConverter = beanFactory.getTypesAnnotatedWith(VertxMessageConverter.class);
         if (Objects.isNull(vertxMessageConverter) && vertxMessageConverter.size() == 0) {
             return;
         }
         List<MessageConverter> messageConverterList = httpServerConfig.getMessageConverterList();
         vertxMessageConverter.stream().sorted(Comparator.comparingInt(x -> {
             return OrderUtil.getOrder(x, 0);
-        })).map(messageConverterClass -> {
-            return (MessageConverter) beanFactory.get(messageConverterClass);
+        })).map(messageConverter -> {
+            return (MessageConverter) messageConverter;
         }).forEach(messageConverterList::add);
 
     }

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
  * @date 2020/4/23
  */
 @VertxMessageConverter
-
 public class MyJsonMessageConverter implements MessageConverter {
     @Override
     public boolean support(Object source) {
