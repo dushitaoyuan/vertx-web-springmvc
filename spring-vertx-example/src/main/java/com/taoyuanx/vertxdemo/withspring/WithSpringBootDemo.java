@@ -21,7 +21,7 @@ public class WithSpringBootDemo {
         ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("applicationContext.xml");
         SpringBeanFactory springBeanFactory = applicationContext.getBean(SpringBeanFactory.class);
         vertxHttpServerConfig.setBeanFactory(springBeanFactory);
-        ServerBootStart.start("com.taoyuanx.vertxdemo.withspring.web", (springMvcRouterHandler) -> {
+        ServerBootStart.start("com.taoyuanx.vertxdemo.withspring.web", 8081, (springMvcRouterHandler) -> {
             System.out.println("启动前");
         }, (springMvcRouterHandler) -> {
             VertxHttpServerConfig serverConfig = springMvcRouterHandler.getHttpServerConfig();

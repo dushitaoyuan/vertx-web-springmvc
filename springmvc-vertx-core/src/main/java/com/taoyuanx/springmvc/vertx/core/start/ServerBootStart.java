@@ -19,8 +19,9 @@ import java.util.function.Consumer;
 public class ServerBootStart {
 
 
-    public static void start(String basepackages, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
+    public static void start(String basepackages, Integer httpPort, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
         VertxHttpServerConfig serverConfig = new VertxHttpServerConfig();
+        serverConfig.setHttpPort(httpPort);
         serverConfig.setBasePackages(basepackages);
         start(serverConfig, before, after);
     }
