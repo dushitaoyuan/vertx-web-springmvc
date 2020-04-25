@@ -73,6 +73,10 @@ public class SpringMvcRouterHandler {
         }}));
 
         router.route().handler(BodyHandler.create(true));
+
+        /**
+         * 初始化拦截器
+         */
         initInterceptor(router);
         /**
          * 初始化消息转换
