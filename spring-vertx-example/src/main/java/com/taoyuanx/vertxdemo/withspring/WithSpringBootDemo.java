@@ -1,14 +1,8 @@
 package com.taoyuanx.vertxdemo.withspring;
 
-import com.taoyuanx.springmvc.vertx.core.core.VertxConstant;
 import com.taoyuanx.springmvc.vertx.core.core.VertxHttpServerConfig;
 import com.taoyuanx.springmvc.vertx.core.core.spring.SpringBeanFactory;
-import com.taoyuanx.springmvc.vertx.core.core.template.AbstractTemplateEngineDelegate;
 import com.taoyuanx.springmvc.vertx.core.start.ServerBootStart;
-import com.taoyuanx.vertxdemo.withspring.web.MyJsonMessageConverter;
-import io.vertx.core.VertxException;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Router;
 import io.vertx.ext.web.templ.freemarker.FreeMarkerTemplateEngine;
 import io.vertx.ext.web.templ.thymeleaf.ThymeleafTemplateEngine;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -29,7 +23,6 @@ public class WithSpringBootDemo {
             FreeMarkerTemplateEngine freeMarkerTemplateEngine = FreeMarkerTemplateEngine.create(serverConfig.getVertx());
             springMvcRouterHandler.registVertxTemplateEngine("myTemplate", "templates/", "html", thymeleafTemplateEngine);
             springMvcRouterHandler.registVertxTemplateEngine("myTemplate2", "templates/", "ftl", freeMarkerTemplateEngine);
-            springMvcRouterHandler.registVertxMessageConverter(new MyJsonMessageConverter());
             System.out.println("启动后");
         });
 

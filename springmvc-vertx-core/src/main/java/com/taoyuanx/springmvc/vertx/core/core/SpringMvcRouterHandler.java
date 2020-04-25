@@ -6,6 +6,7 @@ import com.taoyuanx.springmvc.vertx.core.core.exception.ExceptionHandler;
 import com.taoyuanx.springmvc.vertx.core.core.exception.RouterAdvice;
 import com.taoyuanx.springmvc.vertx.core.core.interceptors.IRequestInterceptor;
 import com.taoyuanx.springmvc.vertx.core.core.interceptors.Interceptor;
+import com.taoyuanx.springmvc.vertx.core.core.message.JsonMessageConverter;
 import com.taoyuanx.springmvc.vertx.core.core.message.MessageConverter;
 import com.taoyuanx.springmvc.vertx.core.core.message.VertxMessageConverter;
 import com.taoyuanx.springmvc.vertx.core.core.route.RouteInfo;
@@ -406,7 +407,6 @@ public class SpringMvcRouterHandler {
         })).map(messageConverter -> {
             return (MessageConverter) messageConverter;
         }).forEach(messageConverterList::add);
-
     }
 
     public void registVertxTemplateEngine(String engineName, String basePath, String suffix, TemplateEngine templateEngine) {
@@ -419,7 +419,6 @@ public class SpringMvcRouterHandler {
 
             @Override
             public void after() {
-
             }
         };
         templateEngineDelegate.setBasePath(basePath);

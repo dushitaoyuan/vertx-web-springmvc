@@ -3,6 +3,7 @@ package com.taoyuanx.springmvc.vertx.core.start;
 import com.taoyuanx.springmvc.vertx.core.core.SpringMvcRouterHandler;
 import com.taoyuanx.springmvc.vertx.core.core.VertxConstant;
 import com.taoyuanx.springmvc.vertx.core.core.VertxHttpServerConfig;
+import com.taoyuanx.springmvc.vertx.core.core.message.JsonMessageConverter;
 import com.taoyuanx.springmvc.vertx.core.util.StringUtil;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServer;
@@ -40,6 +41,10 @@ public class VertxHttpServerVerticle extends AbstractVerticle {
         VertxHttpServerConfig serverConfig = routerHandlerRegister.getHttpServerConfig();
         routerHandlerRegister.routerHandle();
         after.accept(routerHandlerRegister);
+        /**
+         * 注册默认json转换
+         */
+        routerHandlerRegister.registVertxMessageConverter(new JsonMessageConverter());
         Router router = serverConfig.getRouter();
         Arrays.stream(serverConfig.getStaticDir().split(",")).forEach(staticDir -> {
             router.route().handler(StaticHandler.create(staticDir));

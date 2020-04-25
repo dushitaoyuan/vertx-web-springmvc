@@ -1,13 +1,12 @@
-package com.taoyuanx.vertxdemo.withspring.web;
+package com.taoyuanx.springmvc.vertx.core.core.message;
 
-import com.taoyuanx.springmvc.vertx.core.core.message.MessageConverter;
-import com.taoyuanx.springmvc.vertx.core.core.message.VertxMessageConverter;
 import com.taoyuanx.springmvc.vertx.core.util.JSONUtil;
 import com.taoyuanx.springmvc.vertx.core.util.ResponseUtil;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpStatusClass;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
-import org.springframework.stereotype.Component;
 
 /**
  * @author dushitaoyuan
@@ -15,7 +14,9 @@ import org.springframework.stereotype.Component;
  * @date 2020/4/23
  */
 @VertxMessageConverter
-public class MyJsonMessageConverter implements MessageConverter {
+public class JsonMessageConverter implements MessageConverter {
+
+
     @Override
     public boolean support(Object source) {
         return true;
@@ -25,10 +26,10 @@ public class MyJsonMessageConverter implements MessageConverter {
     public Handler<RoutingContext> convertTo(Object source) {
         return ctx -> {
             if (source instanceof JsonObject) {
-                ResponseUtil.responseJson(ctx, 200, ((JsonObject) source).encode());
+                ResponseUtil.responseJson(ctx, HttpResponseStatus.OK.code(), ((JsonObject) source).encode());
                 return;
             }
-            ResponseUtil.responseJson(ctx, 200, JSONUtil.toJsonString(source));
+            ResponseUtil.responseJson(ctx, HttpResponseStatus.OK.code(), JSONUtil.toJsonString(source));
         };
     }
 }
