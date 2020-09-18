@@ -1,9 +1,6 @@
 package com.taoyuanx.springmvc.vertx.core.start;
 
-import com.taoyuanx.springmvc.vertx.core.core.BeanFactory;
-import com.taoyuanx.springmvc.vertx.core.core.SpringMvcRouterHandler;
-import com.taoyuanx.springmvc.vertx.core.core.VertxConstant;
-import com.taoyuanx.springmvc.vertx.core.core.VertxHttpServerConfig;
+import com.taoyuanx.springmvc.vertx.core.core.*;
 import com.taoyuanx.springmvc.vertx.core.util.StringUtil;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxException;
@@ -22,16 +19,17 @@ import java.util.function.Consumer;
 public class ServerBootStart {
 
 
-    public static void start(String basepackages, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
+    public static void start(String basepackages, Integer httpPort, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
         VertxHttpServerConfig serverConfig = new VertxHttpServerConfig();
+        serverConfig.setHttpPort(httpPort);
         serverConfig.setBasePackages(basepackages);
         start(serverConfig, before, after);
     }
 
-    public static void start(VertxHttpServerConfig serverConfig,  Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
+    public static void start(VertxHttpServerConfig serverConfig, Consumer<SpringMvcRouterHandler> before, Consumer<SpringMvcRouterHandler> after) {
         resolveDefaultServerConfig(serverConfig);
         SpringMvcRouterHandler springMvcRouterHandler = new SpringMvcRouterHandler(serverConfig);
-        VertxHttpServerVerticle vertxHttpServerVerticle = new VertxHttpServerVerticle(springMvcRouterHandler,after);
+        VertxHttpServerVerticle vertxHttpServerVerticle = new VertxHttpServerVerticle(springMvcRouterHandler, after);
         before.accept(springMvcRouterHandler);
         serverConfig.getVertx().deployVerticle(vertxHttpServerVerticle);
     }
@@ -41,7 +39,7 @@ public class ServerBootStart {
             throw new VertxException("basePackages must not null");
         }
         if (Objects.isNull(serverConfig.getBeanFactory())) {
-            serverConfig.setBeanFactory(new BeanFactory.DefaultBeanFactoryImpl());
+            serverConfig.setBeanFactory(new DefaultBeanFactoryImpl(serverConfig.getBasePackages()));
         }
         if (Objects.isNull(serverConfig.getHttpPort())) {
             serverConfig.setHttpPort(VertxConstant.DEFAULT_SERVER_PORT);
@@ -66,7 +64,7 @@ public class ServerBootStart {
             serverConfig.setRouter(Router.router(serverConfig.getVertx()));
         }
 
-        if(StringUtil.isEmpty(serverConfig.getStaticDir())){
+        if (StringUtil.isEmpty(serverConfig.getStaticDir())) {
             serverConfig.setStaticDir(VertxConstant.DEALUT_STATIC_DIR);
         }
 

@@ -1,9 +1,13 @@
 package com.taoyuanx.springmvc.vertx.core.core;
 
+import com.taoyuanx.springmvc.vertx.core.core.exception.RouterAdvice;
+import com.taoyuanx.springmvc.vertx.core.util.ReflectionUtil;
 import io.vertx.core.VertxException;
+import org.reflections.Reflections;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author dushitaoyuan
@@ -13,19 +17,7 @@ import java.util.Map;
 public interface BeanFactory {
     Object get(Class clazz);
 
-    public static class DefaultBeanFactoryImpl implements BeanFactory {
-        private Map<Class, Object> cache = new HashMap<>();
+    Set<Object> getTypesAnnotatedWith(Class annotion);
 
-        @Override
-        public synchronized Object get(Class clazz) {
-            try {
-                if (!cache.containsKey(clazz)) {
-                    cache.put(clazz, clazz.newInstance());
-                }
-                return cache.get(clazz);
-            } catch (Exception e) {
-                throw new VertxException(clazz + "bean get error");
-            }
-        }
-    }
+
 }
